@@ -4,7 +4,34 @@ if(NOT QDB_VERSION)
 
 # not included from the marvellous qdb
     project(leveldb)    
+    
+    # Set a version - This should be updated by the developer as appropriate.
+    set (PACKAGE_MAJOR_VERSION 1)
+    set (PACKAGE_MINOR_VERSION 18)
+    set (PACKAGE_PATCH_VERSION 0)
+
+    set (${PROJECT_NAME}_MAJOR_VERSION ${PACKAGE_MAJOR_VERSION})
+    set (${PROJECT_NAME}_MINOR_VERSION ${PACKAGE_MINOR_VERSION})
+    set (${PROJECT_NAME}_PATCH_VERSION ${PACKAGE_PATCH_VERSION})
+    set (PACKAGE_VERSION
+      ${PACKAGE_MAJOR_VERSION}.${PACKAGE_MINOR_VERSION}.${PACKAGE_PATCH_VERSION})
+    set (${PROJECT_NAME}_VERSION ${PACKAGE_VERSION})
+    string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
+
     set(CMAKE_DEBUG_POSTFIX "d")
+    
+    # Directory for output files
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib 
+      CACHE PATH "Output directory for static libraries.")
+
+    set(CMAKE_LIBRARY_OUPTUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+      CACHE PATH "Output directory for shared libraries.")
+
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+      CACHE PATH "Output directory for executables and DLL's.")
+
+    
+    
     set(QDB_DEBUG_POSTFIX "d")
     set(QDB_RELEASE_POSTFIX "")
 
@@ -41,7 +68,9 @@ if(NOT QDB_VERSION)
         system
         REQUIRED)
 
-    set(SNAPPY_LIBRARY "")
+    set(SNAPPY_LIBRARY "snappy")
+    
+    #set(SNAPPY_LIBRARY "")
 
     string(REGEX MATCH "clang" CLANG ${CMAKE_CXX_COMPILER})
 
@@ -60,10 +89,12 @@ else(NOT QDB_VERSION)
     set(SNAPPY_LIBRARY "snappy")
 endif(NOT QDB_VERSION)
 
+find_package(${SNAPPY_LIBRARY} REQUIRED)
+
 include_directories(${Boost_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
     include
-    ${SNAPPY_INCLUDE_DIRS})
+    ${${SNAPPY_LIBRARY}_INCLUDE_DIRS} )
 
 if(MSVC)
     add_compile_options(
@@ -82,7 +113,7 @@ add_definitions(
     -DSNAPPY
 )
 
-set(LEVEL_DB_FILES
+set(LEVEL_DB_HEADERS
     include/leveldb/c.h
     include/leveldb/cache.h
     include/leveldb/comparator.h
@@ -98,6 +129,10 @@ set(LEVEL_DB_FILES
     include/leveldb/table.h
     include/leveldb/table_builder.h
     include/leveldb/write_batch.h
+)
+
+set(LEVEL_DB_FILES
+  ${LEVEL_DB_HEADERS}
 	db/builder.cc
     db/builder.h
 	db/db_impl.cc
@@ -189,10 +224,28 @@ add_library(leveldb ${LEVEL_DB_FILES})
 
 target_link_libraries(leveldb
     ${SNAPPY_LIBRARY}
+    ${snappy_LIBRARIES}
     ${Boost_LIBRARIES}
     ${Pthread_LIBRARY}
 )
 
+# Install targets
+install(TARGETS leveldb
+        EXPORT depends
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+
+# Install headers
+install(FILES ${LEVEL_DB_HEADERS} DESTINATION include/leveldb)
+
+
+# List of libraries built in this project
+set(PROJECT_LIBRARY_LIST leveldb)
+add_subdirectory (cmake)
+
+
+#############################################################
 add_executable(leveldbutil
     db/leveldb_main.cc)
 

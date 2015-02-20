@@ -31,3 +31,4 @@ cmake_install.cmake
 *.sln
 *.vcxproj
 *.vcxproj.filters
+build_vc11_win64
